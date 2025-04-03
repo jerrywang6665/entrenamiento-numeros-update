@@ -3,111 +3,157 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>西语数字听力（华为兼容版）</title>
+    <title>西语数字听力大师</title>
     <style>
+        :root {
+            --primary: #4361ee;
+            --advanced: #f72585;
+            --expert: #7209b7;
+            --hell: #3a0ca3;
+        }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             max-width: 500px;
             margin: 0 auto;
             padding: 20px;
-            text-align: center;
+            background: #f8f9fa;
         }
+        .mode-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .mode-btn {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        #basicBtn { background: var(--primary); color: white; }
+        #advancedBtn { background: var(--advanced); color: white; }
+        #expertBtn { background: var(--expert); color: white; }
+        #hellBtn { background: var(--hell); color: white; }
         button {
-            background: #4361ee;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 18px;
-            border-radius: 10px;
-            margin: 10px;
-            width: 80%;
-        }
-        #status {
-            min-height: 60px;
             padding: 15px;
+            margin: 10px 0;
+            width: 100%;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        #playBtn { background: #4cc9f0; }
+        #answerBtn { background: #52b788; display: none; }
+        #autoBtn { background: #ff9e00; }
+        #status {
+            min-height: 80px;
+            padding: 15px;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            font-size: 1.2em;
         }
     </style>
 </head>
 <body>
-    <h1>西语数字听力训练</h1>
-    <div id="status">准备就绪</div>
+    <h1>西语数字听力大师</h1>
+    
+    <div class="mode-selector">
+        <button id="basicBtn" class="mode-btn">普通模式 1-100</button>
+        <button id="advancedBtn" class="mode-btn">进阶模式 1-1K</button>
+        <button id="expertBtn" class="mode-btn">专家模式 1-10K</button>
+        <button id="hellBtn" class="mode-btn">地狱模式 1-100K</button>
+    </div>
+    
+    <div id="status">点击播放按钮开始</div>
+    
     <button id="playBtn">播放数字</button>
-    <button id="answerBtn" style="display:none;">显示答案</button>
+    <button id="answerBtn">显示答案</button>
+    <button id="autoBtn">自动播放 (3秒间隔)</button>
 
     <script>
-        // 华为兼容版语音引擎
-        const speechEngine = {
-            // 增强版speak方法
+        // ================ 华为兼容版语音引擎 ================
+        const speechHelper = {
             speak: async function(text) {
                 return new Promise((resolve) => {
                     const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'es-ES';
                     
-                    // 华为设备特殊配置
-                    if (this.isHuaweiDevice()) {
-                        utterance.lang = 'es-ES';
-                        utterance.rate = 0.7; // 放慢语速
-                        
-                        // 强制使用第一个可用语音
+                    // 华为设备特殊处理
+                    if (/huawei|honor/i.test(navigator.userAgent)) {
+                        utterance.rate = 0.65; // 更慢语速
                         const voices = window.speechSynthesis.getVoices();
-                        if (voices.length > 0) {
-                            utterance.voice = voices[0];
-                            console.log("华为设备使用语音:", voices[0].name);
-                        }
-                    } 
-                    // 其他设备标准配置
-                    else {
-                        utterance.lang = 'es-ES';
-                        utterance.rate = 0.85;
-                        
-                        // 优先选择西班牙语语音
+                        if (voices.length > 0) utterance.voice = voices[0];
+                    } else {
+                        utterance.rate = 0.8;
                         const voices = window.speechSynthesis.getVoices();
-                        const spanishVoice = voices.find(v => v.lang.startsWith('es'));
-                        if (spanishVoice) utterance.voice = spanishVoice;
+                        const esVoice = voices.find(v => v.lang.startsWith('es'));
+                        if (esVoice) utterance.voice = esVoice;
                     }
-
+                    
                     utterance.onend = resolve;
                     window.speechSynthesis.speak(utterance);
                 });
-            },
-            
-            // 检测华为设备
-            isHuaweiDevice: function() {
-                return /huawei|honor|mate|p\d{2}/i.test(navigator.userAgent);
             }
         };
 
-        // 训练系统
+        // ================ 核心训练系统 ================
         const trainer = {
             currentNum: 0,
+            currentMode: 'basic',
+            isAutoPlaying: false,
+            autoTimer: null,
             
             init() {
-                // 初始化语音
-                window.speechSynthesis.getVoices();
+                this.setupEventListeners();
+                window.speechSynthesis.getVoices(); // 预加载语音
                 
-                // 按钮事件
-                document.getElementById('playBtn').onclick = () => this.playNumber();
-                document.getElementById('answerBtn').onclick = () => this.showAnswer();
-                
-                // iOS兼容处理
+                // iOS兼容
                 if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
                     document.body.addEventListener('touchstart', () => {
-                        console.log("iOS语音引擎激活");
+                        console.log("iOS语音激活");
                     }, { once: true });
                 }
             },
             
+            setupEventListeners() {
+                // 模式选择
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.currentMode = btn.id.replace('Btn', '');
+                        document.querySelectorAll('.mode-btn').forEach(b => b.style.opacity = 0.7);
+                        btn.style.opacity = 1;
+                    });
+                });
+                
+                // 功能按钮
+                document.getElementById('playBtn').addEventListener('click', () => this.playNumber());
+                document.getElementById('answerBtn').addEventListener('click', () => this.showAnswer());
+                document.getElementById('autoBtn').addEventListener('click', () => this.toggleAutoPlay());
+            },
+            
             async playNumber() {
-                this.currentNum = Math.floor(Math.random() * 100) + 1;
-                document.getElementById('status').textContent = "播放中...";
+                this.currentNum = this.generateNumber();
+                document.getElementById('status').textContent = "🔊 播放中...";
                 document.getElementById('answerBtn').style.display = 'none';
                 
                 try {
-                    await speechEngine.speak(this.toSpanish(this.currentNum));
+                    await speechHelper.speak(this.toSpanish(this.currentNum));
                     document.getElementById('status').textContent = "这是什么数字？";
                     document.getElementById('answerBtn').style.display = 'block';
                 } catch (error) {
                     document.getElementById('status').textContent = "播放失败，请重试";
-                    console.error(error);
+                }
+            },
+            
+            generateNumber() {
+                const rand = Math.random();
+                switch(this.currentMode) {
+                    case 'basic':    return Math.floor(Math.random() * 100) + 1;
+                    case 'advanced': return rand < 0.8 ? Math.floor(Math.random() * 900) + 101 : Math.floor(Math.random() * 100) + 1;
+                    case 'expert':   return rand < 0.85 ? Math.floor(Math.random() * 9000) + 1001 : Math.floor(Math.random() * 1000) + 1;
+                    case 'hell':     return rand < 0.9 ? Math.floor(Math.random() * 90000) + 10001 : Math.floor(Math.random() * 10000) + 1;
                 }
             },
             
@@ -116,18 +162,46 @@
                     `${this.currentNum} - ${this.toSpanish(this.currentNum)}`;
             },
             
-            // 西语数字转换（1-100）
+            toggleAutoPlay() {
+                const btn = document.getElementById('autoBtn');
+                if (this.isAutoPlaying) {
+                    clearInterval(this.autoTimer);
+                    this.isAutoPlaying = false;
+                    btn.textContent = "自动播放 (3秒间隔)";
+                    btn.style.background = "#ff9e00";
+                } else {
+                    this.isAutoPlaying = true;
+                    btn.textContent = "停止自动";
+                    btn.style.background = "#ef233c";
+                    this.playNumber();
+                    this.autoTimer = setInterval(() => this.playNumber(), 3000);
+                }
+            },
+            
             toSpanish(num) {
-                const nums = ["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez",
-                             "once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve",
-                             "veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco",
-                             "veintiséis","veintisiete","veintiocho","veintinueve","treinta"];
-                if (num <= 30) return nums[num];
-                
-                const tens = ["","","","treinta","cuarenta","cincuenta",
-                             "sesenta","setenta","ochenta","noventa"];
-                const units = num % 10;
-                return tens[Math.floor(num/10)] + (units > 0 ? " y " + nums[units] : "");
+                // 完整版西语数字转换（支持到10万）
+                if (num <= 30) {
+                    const basics = ["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez",
+                                  "once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve",
+                                  "veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco",
+                                  "veintiséis","veintisiete","veintiocho","veintinueve","treinta"];
+                    return basics[num];
+                }
+                if (num <= 99) {
+                    const tens = ["","","","treinta","cuarenta","cincuenta","sesenta","setenta","ochenta","noventa"];
+                    return tens[Math.floor(num/10)] + (num%10 > 0 ? " y " + this.toSpanish(num%10) : "");
+                }
+                if (num <= 999) {
+                    const hundreds = ["","ciento","doscientos","trescientos","cuatrocientos","quinientos",
+                                    "seiscientos","setecientos","ochocientos","novecientos"];
+                    return hundreds[Math.floor(num/100)] + (num%100 > 0 ? " " + this.toSpanish(num%100) : "");
+                }
+                if (num <= 999999) {
+                    const thousand = Math.floor(num/1000);
+                    return (thousand === 1 ? "mil" : this.toSpanish(thousand) + " mil") + 
+                          (num%1000 > 0 ? " " + this.toSpanish(num%1000) : "");
+                }
+                return "Número muy grande";
             }
         };
 
