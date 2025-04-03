@@ -285,6 +285,28 @@
             
             // 语音合成
             async speak(text) {
+    // ======== 新增开始 ========
+    // 华为设备特殊处理
+    if (/huawei|honor/i.test(navigator.userAgent)) {
+        const utterance = new SpeechSynthesisUtterance();
+        utterance.text = text;
+        utterance.lang = 'es-ES';
+        utterance.rate = 0.7; // 华为需要更慢语速
+        
+        // 尝试强制使用第一个可用语音
+        const voices = speechSynthesis.getVoices();
+        if (voices.length > 0) {
+            utterance.voice = voices[0]; 
+            console.log("华为设备使用语音引擎:", voices[0].name);
+        }
+        
+        return new Promise((resolve) => {
+            utterance.onend = resolve;
+            speechSynthesis.speak(utterance);
+        });
+    }
+    // ...其他原有逻辑...
+}
                 return new Promise((resolve, reject) => {
                     const utterance = new SpeechSynthesisUtterance();
                     utterance.text = text;
