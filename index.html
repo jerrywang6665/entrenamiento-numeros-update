@@ -3,418 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>西班牙语数字听力训练</title>
+    <title>西语数字听力训练</title>
     <style>
         body {
-            font-family: 'Microsoft YaHei', sans-serif;
-            max-width: 600px;
+            font-family: -apple-system, sans-serif;
+            max-width: 500px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
-            color: #333;
-        }
-        .container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #2c3e50;
             text-align: center;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            text-align: center;
-            color: #7f8c8d;
-            margin-bottom: 30px;
-        }
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin: 30px 0;
         }
         button {
-            background-color: #3498db;
+            background: #007AFF;
             color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 5px;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 10px;
+            margin: 10px;
+        }
+        #status {
+            color: #FF2D55;
+            min-height: 60px;
             font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
         }
-        button:hover {
-            background-color: #2980b9;
-        }
-        button:disabled {
-            background-color: #95a5a6;
-            cursor: not-allowed;
-        }
-        .settings {
-            margin: 20px 0;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #34495e;
-        }
-        select, input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            font-family: inherit;
-        }
-        .history {
-            margin-top: 30px;
-            border-top: 1px solid #eee;
-            padding-top: 20px;
-        }
-        .history-title {
-            color: #2c3e50;
-            margin-bottom: 15px;
-        }
-        .history-item {
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-        }
-        .number {
-            font-weight: bold;
-            color: #e74c3c;
-        }
-        .time {
-            color: #7f8c8d;
-            font-size: 0.9em;
-        }
-        .interval-display {
-            text-align: center;
-            font-size: 1.1em;
-            margin-bottom: 20px;
-            color: #3498db;
-        }
-        .alert {
-            padding: 15px;
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            margin-bottom: 20px;
-            border-radius: 4px;
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>西班牙语数字听力训练</h1>
-        <p class="subtitle">通过听力练习掌握西班牙语数字 (1-100,000)</p>
-        
-        <div id="compatibilityAlert" class="alert hidden">
-            <strong>兼容性提示：</strong>
-            <span id="compatibilityMessage"></span>
-        </div>
-        
-        <div class="settings">
-            <label for="difficulty">难度级别：</label>
-            <select id="difficulty">
-                <option value="100">初级 (1-100)</option>
-                <option value="1000">中级 (1-1,000)</option>
-                <option value="10000">高级 (1-10,000)</option>
-                <option value="100000">专家级 (1-100,000)</option>
-            </select>
-            
-            <label for="interval">数字间隔时间：</label>
-            <input type="range" id="interval" min="1" max="5" step="0.5" value="3">
-            <div class="interval-display">
-                <span id="intervalValue">3</span> 秒
-            </div>
-        </div>
-        
-        <div class="controls">
-            <button id="startBtn">开始训练</button>
-            <button id="stopBtn" disabled>停止训练</button>
-        </div>
-        
-        <div class="history">
-            <h3 class="history-title">最近播放：</h3>
-            <div id="historyList"></div>
-        </div>
+    <h1>西语数字听力训练</h1>
+    <div id="status">正在检测浏览器兼容性...</div>
+    
+    <div id="supportedUI">
+        <button id="playBtn">播放数字</button>
+        <button id="autoBtn">自动播放</button>
+    </div>
+    
+    <div id="unsupportedUI" class="hidden">
+        <h3>😢 您的设备不支持语音功能</h3>
+        <p>请尝试以下方法：</p>
+        <ol style="text-align: left; margin: 20px;">
+            <li>使用 <strong>Chrome/Firefox/Edge</strong> 最新版</li>
+            <li>安卓设备需安装 <strong>Google TTS</strong></li>
+            <li>iOS 14+ 需使用 <strong>Safari</strong></li>
+        </ol>
+        <button onclick="window.location.reload()">重新检测</button>
     </div>
 
     <script>
-        // 显示兼容性警告
-        function showAlert(message, isError = true) {
-            const alertBox = document.getElementById('compatibilityAlert');
-            document.getElementById('compatibilityMessage').textContent = message;
-            alertBox.style.display = 'block';
-            alertBox.style.backgroundColor = isError ? '#f8d7da' : '#d1ecf1';
-            alertBox.style.borderLeftColor = isError ? '#dc3545' : '#0dcaf0';
-        }
-
-        // 隐藏兼容性警告
-        function hideAlert() {
-            document.getElementById('compatibilityAlert').style.display = 'none';
-        }
-
-        // 西班牙语数字转换
-        function numberToWords(num) {
-            const units = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 
-                          'seis', 'siete', 'ocho', 'nueve'];
-            const teens = ['diez', 'once', 'doce', 'trece', 'catorce', 'quince',
-                          'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve'];
-            const tens = ['', 'diez', 'veinte', 'treinta', 'cuarenta', 'cincuenta',
-                         'sesenta', 'setenta', 'ochenta', 'noventa'];
-            const hundreds = ['', 'ciento', 'doscientos', 'trescientos', 'cuatrocientos',
-                            'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
+        // 1. 兼容性检测
+        function checkCompatibility() {
+            const statusEl = document.getElementById('status');
             
-            if (num === 0) return units[0];
-            if (num < 10) return units[num];
-            if (num < 20) return teens[num - 10];
-            if (num === 20) return 'veinte';
-            if (num < 30) return 'veinti' + units[num - 20];
-            if (num < 100) {
-                return tens[Math.floor(num / 10)] + 
-                      (num % 10 ? ' y ' + units[num % 10] : '');
+            // 基础API检测
+            if (!window.speechSynthesis) {
+                showUnsupported("您的浏览器不支持语音合成API");
+                return false;
             }
-            if (num === 100) return 'cien';
-            if (num < 1000) {
-                return hundreds[Math.floor(num / 100)] + 
-                      (num % 100 ? ' ' + numberToWords(num % 100) : '');
+            
+            // iOS特殊检测
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                statusEl.textContent = "iOS设备需用户交互授权...";
+                return new Promise(resolve => {
+                    document.body.addEventListener('touchstart', () => {
+                        resolve(true);
+                    }, { once: true });
+                });
             }
-            if (num === 1000) return 'mil';
-            if (num < 2000) {
-                return 'mil ' + (num % 1000 ? numberToWords(num % 1000) : '');
-            }
-            if (num < 1000000) {
-                const thousands = Math.floor(num / 1000);
-                return (thousands === 1 ? '' : numberToWords(thousands) + ' ') + 'mil' + 
-                      (num % 1000 ? ' ' + numberToWords(num % 1000) : '');
-            }
-            return numberToWords(Math.floor(num / 1000000)) + ' millón' + 
-                  (num % 1000000 ? ' ' + numberToWords(num % 1000000) : '');
+            
+            return true;
         }
 
-        // 语音合成核心功能
+        // 2. 显示不支持界面
+        function showUnsupported(message) {
+            document.getElementById('status').textContent = message;
+            document.getElementById('supportedUI').classList.add('hidden');
+            document.getElementById('unsupportedUI').classList.remove('hidden');
+        }
+
+        // 3. 西语数字生成 (1-100)
+        function getSpanishNum(num) {
+            const nums = ["cero","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez",
+                         "once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve",
+                         "veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco",
+                         "veintiséis","veintisiete","veintiocho","veintinueve","treinta"];
+            return num <= 30 ? nums[num] : num + " (演示版上限30)";
+        }
+
+        // 4. 语音播放核心
         function speak(text) {
-            return new Promise((resolve, reject) => {
-                // 1. 基础兼容性检查
-                if (!window.speechSynthesis) {
-                    showAlert('您的浏览器不支持语音合成功能，请使用Chrome/Firefox/Edge最新版');
-                    reject(new Error('SpeechSynthesis not supported'));
-                    return;
-                }
-
-                // 2. 检查语音引擎状态
-                if (speechSynthesis.pending) {
-                    speechSynthesis.cancel();
-                }
-
-                // 3. 创建语音实例
-                const utterance = new SpeechSynthesisUtterance(text);
+            return new Promise((resolve) => {
+                const utterance = new SpeechSynthesisUtterance();
+                utterance.text = text;
                 utterance.lang = 'es-ES';
-                utterance.rate = 0.9;
-                utterance.volume = 1;
-
-                // 4. 错误处理
-                utterance.onerror = (event) => {
-                    console.error('语音播放失败:', event.error);
-                    showAlert(`播放失败: ${event.error}`, true);
-                    reject(event.error);
-                };
-
-                utterance.onend = () => {
-                    resolve();
-                };
-
-                // 5. 语音选择策略
-                const voices = window.speechSynthesis.getVoices();
-                if (voices.length === 0) {
-                    showAlert('正在加载语音库，请稍候...', false);
-                    window.speechSynthesis.onvoiceschanged = () => {
-                        selectVoice(utterance);
-                        window.speechSynthesis.speak(utterance);
-                    };
-                    return;
-                }
-
-                selectVoice(utterance);
-                window.speechSynthesis.speak(utterance);
+                utterance.rate = 0.8;
+                utterance.onend = resolve;
+                
+                // 优先选择西班牙语语音
+                const voices = speechSynthesis.getVoices();
+                const spanishVoice = voices.find(v => v.lang.startsWith('es'));
+                if (spanishVoice) utterance.voice = spanishVoice;
+                
+                speechSynthesis.speak(utterance);
             });
         }
 
-        // 选择最佳语音
-        function selectVoice(utterance) {
-            const voices = window.speechSynthesis.getVoices();
-            const preferredVoices = [
-                'Google español',
-                'Microsoft Helena',
-                'Paulina',
-                'Monica'  // 常见西班牙语语音
-            ];
-
-            // 优先选择指定语音
-            for (const name of preferredVoices) {
-                const voice = voices.find(v => v.name.includes(name) && v.lang.startsWith('es'));
-                if (voice) {
-                    utterance.voice = voice;
-                    hideAlert();
-                    return;
+        // 5. 初始化
+        async function init() {
+            const isSupported = await checkCompatibility();
+            if (!isSupported) return;
+            
+            document.getElementById('status').textContent = "点击按钮开始练习";
+            
+            // 按钮功能
+            document.getElementById('playBtn').onclick = async () => {
+                const num = Math.floor(Math.random() * 30) + 1;
+                document.getElementById('status').textContent = `${num} - ${getSpanishNum(num)}`;
+                await speak(getSpanishNum(num));
+            };
+            
+            // 自动播放
+            let autoInterval;
+            document.getElementById('autoBtn').onclick = function() {
+                if (autoInterval) {
+                    clearInterval(autoInterval);
+                    autoInterval = null;
+                    this.textContent = "自动播放";
+                } else {
+                    this.textContent = "停止";
+                    autoInterval = setInterval(async () => {
+                        const num = Math.floor(Math.random() * 30) + 1;
+                        document.getElementById('status').textContent = `${num} - ${getSpanishNum(num)}`;
+                        await speak(getSpanishNum(num));
+                    }, 3000);
                 }
-            }
-
-            // 次选其他西班牙语语音
-            const spanishVoice = voices.find(v => v.lang.startsWith('es'));
-            if (spanishVoice) {
-                utterance.voice = spanishVoice;
-                hideAlert();
-                return;
-            }
-
-            // 无合适语音时的处理
-            showAlert('未找到西班牙语语音包，将使用默认语音', true);
-            console.warn('可用语音:', voices);
+            };
         }
 
-        // 训练系统
-        const trainer = {
-            isRunning: false,
-            intervalId: null,
-            history: [],
-            
-            async start() {
-                if (this.isRunning) return;
-                
-                // 权限预检查
-                try {
-                    await this.checkCompatibility();
-                } catch (error) {
-                    showAlert(error.message);
-                    return;
-                }
-                
-                this.isRunning = true;
-                document.getElementById('startBtn').disabled = true;
-                document.getElementById('stopBtn').disabled = false;
-                
-                const difficulty = parseInt(document.getElementById('difficulty').value);
-                const interval = parseFloat(document.getElementById('interval').value) * 1000;
-                
-                await this.playNumber(difficulty);
-                
-                this.intervalId = setInterval(async () => {
-                    await this.playNumber(difficulty);
-                }, interval);
-            },
-            
-            stop() {
-                if (!this.isRunning) return;
-                
-                clearInterval(this.intervalId);
-                this.isRunning = false;
-                document.getElementById('startBtn').disabled = false;
-                document.getElementById('stopBtn').disabled = true;
-                speechSynthesis.cancel();
-            },
-            
-            async playNumber(max) {
-                const num = this.generateNumber(max);
-                try {
-                    await speak(numberToWords(num));
-                    this.addToHistory(num);
-                } catch (error) {
-                    console.error('播放失败:', error);
-                    this.stop();
-                }
-            },
-            
-            generateNumber(max) {
-                // 对数分布生成数字（更频繁出现较小数字）
-                const exp = Math.random() * Math.log10(max);
-                const num = Math.floor(Math.pow(10, exp));
-                return Math.min(num, max);
-            },
-            
-            addToHistory(num) {
-                this.history.unshift({
-                    number: num,
-                    text: numberToWords(num),
-                    time: new Date().toLocaleTimeString()
-                });
-                
-                if (this.history.length > 10) {
-                    this.history.pop();
-                }
-                
-                this.updateHistoryDisplay();
-            },
-            
-            updateHistoryDisplay() {
-                const historyList = document.getElementById('historyList');
-                historyList.innerHTML = '';
-                
-                this.history.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'history-item';
-                    div.innerHTML = `
-                        <span class="number">${item.number}</span>
-                        <span>${item.text}</span>
-                        <span class="time">${item.time}</span>
-                    `;
-                    historyList.appendChild(div);
-                });
-            },
-            
-            async checkCompatibility() {
-                return new Promise((resolve, reject) => {
-                    // 基础API检查
-                    if (!window.speechSynthesis) {
-                        reject(new Error('您的浏览器不支持语音合成API'));
-                        return;
-                    }
-                    
-                    // iOS特殊处理
-                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                    if (isIOS) {
-                        // iOS需要用户手势触发
-                        document.body.addEventListener('touchstart', function handler() {
-                            document.body.removeEventListener('touchstart', handler);
-                            resolve();
-                        }, { once: true });
-                        
-                        showAlert('iOS用户请先点击屏幕任意位置授权语音权限', false);
-                        return;
-                    }
-                    
-                    // 其他平台直接解析
-                    resolve();
-                });
-            }
-        };
-
-        // 初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            // 间隔时间显示
-            document.getElementById('interval').addEventListener('input', function() {
-                document.getElementById('intervalValue').textContent = this.value;
-            });
-            
-            // 按钮事件
-            document.getElementById('startBtn').addEventListener('click', () => trainer.start());
-            document.getElementById('stopBtn').addEventListener('click', () => trainer.stop());
-            
-            // 预加载语音
-            if (window.speechSynthesis) {
-                window.speechSynthesis.getVoices();
-            }
-            
-            // 触摸事件处理（iOS）
-            document.body.addEventListener('touchstart', () => {
-                console.log('iOS touch event registered');
-            }, { passive: true });
-        });
+        // 启动检测
+        init();
     </script>
 </body>
 </html>
